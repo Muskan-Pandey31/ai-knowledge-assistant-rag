@@ -1,0 +1,86 @@
+import streamlit as st
+import io
+import pandas as pd
+from docx import Document
+
+from backend.rag_pipeline import VectorStore
+from backend.llm_handler import generate_answer
+
+# Initialize store
+if "store" not in st.session_state:
+    st.session_state.store = VectorStore()
+
+store = st.session_state.store
+
+st.title("AI Knowledge Assistant")
+
+# 📂 File Upload
+uploaded_file = st.file_uploader("Upload a TXT or CSV file")
+
+if uploaded_file:
+    file_type = uploaded_file.name.split(".")[-1]
+
+    if file_type == "txt":
+        text = uploaded_file.read().decode("utf-8")
+        chunks = text.split("\n")
+
+    elif file_type == "csv":
+        df = pd.read_csv(uploaded_file)
+        chunks = df.astype(str).apply(lambda row: " ".join(row), axis=1).tolist()
+
+    else:
+        st.error("Only TXT and CSV supported for now")
+        chunks = []
+
+    if chunks:
+        store.add_documents(chunks)
+        st.success("File processed successfully!")
+
+# ❓ Ask Question
+query = st.text_input("Ask a question")
+
+answer = ""
+
+if query:
+    results = store.search(query)
+
+    if not results:
+        answer = "No relevant data found"
+    else:
+        context = " ".join(results)
+        answer = generate_answer(context, query)
+
+    st.write("### Answer:")
+    st.write(answer)
+
+# 📥 Download Functions
+def create_word(answer):
+    doc = Document()
+    doc.add_heading("AI Answer", 0)
+    doc.add_paragraph(answer)
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+def create_excel(answer):
+    df = pd.DataFrame({"Answer": [answer]})
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False)
+    buffer.seek(0)
+    return buffer
+
+# ⬇️ Download Buttons
+if answer:
+    st.download_button(
+        "Download as Word",
+        create_word(answer),
+        file_name="answer.docx"
+    )
+
+    st.download_button(
+        "Download as Excel",
+        create_excel(answer),
+        file_name="answer.xlsx"
+    )
