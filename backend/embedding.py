@@ -1,6 +1,21 @@
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# def get_embeddings(texts):
+#     return model.encode(texts)
+
+
+# New code
+
+from sentence_transformers import SentenceTransformer
+import streamlit as st
+
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('all-MiniLM-L6-v2')
+
+model = load_model()
 
 def get_embeddings(texts):
     return model.encode(texts)

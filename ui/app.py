@@ -6,6 +6,18 @@ from docx import Document
 from backend.rag_pipeline import VectorStore
 from backend.llm_handler import generate_answer
 
+# Update 
+
+def chunk_text(text, chunk_size=100, overlap=20):
+    words = text.split()
+    chunks = []
+    
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = " ".join(words[i:i+chunk_size])
+        chunks.append(chunk)
+    
+    return chunks
+
 # Initialize store
 if "store" not in st.session_state:
     st.session_state.store = VectorStore()
@@ -22,7 +34,8 @@ if uploaded_file:
 
     if file_type == "txt":
         text = uploaded_file.read().decode("utf-8")
-        chunks = text.split("\n")
+        # chunks = text.split("\n") # Updating this line
+        chunks = chunk_text(text) # new line for chunking
 
     elif file_type == "csv":
         df = pd.read_csv(uploaded_file)
