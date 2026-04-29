@@ -59,11 +59,19 @@ class VectorStore:
     def __init__(self):
         self.index = None
         self.texts = []
+        self.metadata = [] # new for metadata
         self.knowledge_graph = {}
 
     def add_documents(self, docs):
         embeddings = get_embeddings(docs)
         self.texts.extend(docs)
+
+        # new metadata handling
+        for i, doc in enumerate(docs):
+          self.metadata.append({"id": i, "length": len(doc)})
+
+        #   old code
+
 
         # ✅ Knowledge graph building (FIXED)
         for doc in docs:
@@ -87,10 +95,23 @@ class VectorStore:
         query_embedding = get_embeddings([query])
         distances, indices = self.index.search(np.array(query_embedding), k)
 
-        results = []
+# old code
+
+        # results = []
+        # for i, dist in zip(indices[0], distances[0]):
+        #     if dist < 1.5:
+        #         results.append(self.texts[i])
+
+        # new code
+
+        filtered_results = []
         for i, dist in zip(indices[0], distances[0]):
-            if dist < 1.5:
-                results.append(self.texts[i])
+           if dist < 1.5 and len(self.texts[i]) > 20:
+             filtered_results.append(self.texts[i])
+
+        results = filtered_results
+
+# old code
 
         # ✅ Knowledge graph boost (AFTER results created)
         for word in query.lower().split():
